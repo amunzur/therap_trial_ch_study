@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.stats import mannwhitneyu
 from scipy import stats
+import os
+from scipy.stats import fisher_exact
 
 mpl.rcParams['font.size'] = 8
 mpl.rcParams['text.color'] = 'k'
@@ -29,6 +31,7 @@ dir_figures=f"{project_dir}/figures/supp"
 path_utilities=f"{project_dir}/plotting_scripts/utilities.py"
 with open(path_utilities, 'r') as file:
     script_code = file.read()
+
 exec(script_code)
 
 # LOAD DATASETS
@@ -84,9 +87,13 @@ gene_sets = {
     "CHEK2": ["CHEK2"]
 }
 
+p_values={}
+numbers={}
+
 for group_name, genes_list in gene_sets.items():
     row = {"Gene group": group_name}
     
+    mydict={}
     for arm in ["LuPSMA", "Cabazitaxel"]:
         subset = combined_muts[(combined_muts["Gene"].isin(genes_list)) & (combined_muts["Arm"] == arm)]
         subset = binomial_test_vaf(subset)
@@ -104,11 +111,33 @@ for group_name, genes_list in gene_sets.items():
         row[f"{arm}_STABLE"] = fmt(len(stable), total)
         row[f"{arm}_DECR"] = fmt(len(decr), total)
         
+        mydict[arm]=len(incr)
+        # numbers[group_name]
+        
     comparison_table.append(row)
 
 # Convert to DataFrame
 comparison_df = pd.DataFrame(comparison_table)
 # print(comparison_df.to_string(index=False))
+
+# Here run the Fisher's exact test on prevalence of increasing mutations
+for gene_group in ["ALL genes", "DTA genes combined", "DDR genes combined"]:
+    n_lu_incr=comparison_df[comparison_df["Gene group"]==gene_group]["LuPSMA_INCR"].values[0].split("/")[0]
+    n_lu_total=comparison_df[comparison_df["Gene group"]==gene_group]["LuPSMA_INCR"].values[0].split("/")[1].split(" ")[0]
+    n_caba_incr=comparison_df[comparison_df["Gene group"]==gene_group]["Cabazitaxel_INCR"].values[0].split("/")[0]
+    n_caba_total=comparison_df[comparison_df["Gene group"]==gene_group]["Cabazitaxel_INCR"].values[0].split("/")[1].split(" ")[0]
+    
+    lu_not_incr = int(n_lu_total) - int(n_lu_incr)
+    caba_not_incr = int(n_caba_total) - int(n_caba_incr)
+    contingency = [[int(n_lu_incr), lu_not_incr], [int(n_caba_incr), caba_not_incr]]
+    
+    odds_ratio, p_value = fisher_exact(contingency, alternative="two-sided")
+    
+    print(f"Gene group: {gene_group}")
+    print(f"Contingency table: {contingency}")
+    print(f"Odds ratio: {odds_ratio:.2f}, P-value: {p_value}")
+    print("------------")
+
 
 # Extract percentage values
 def extract_percentage(s):
