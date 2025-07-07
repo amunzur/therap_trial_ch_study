@@ -15,10 +15,16 @@ path_sample_info = f"{project_dir}/resources/sample_info.tsv"
 figures = f"{project_dir}/figures/main"
 path_clin_data=f"{project_dir}/clinical_data/TheraP supplementary tables - Clinical data (10-Dec-2023).tsv"
 
+utilities=f"{project_dir}/plotting_scripts/utilities.py"
+with open(utilities, 'r') as file:
+    script_code = file.read()
+
+exec(script_code)
+
 # Subset both dfs to patients with progression samples
 sample_info = pd.read_csv(path_sample_info, sep= "\t")
 arm_info=sample_info[sample_info["Timepoint"]=="Baseline"][["Patient_id", "Arm"]].drop_duplicates()
-baseline_ch = pd.read_csv(path_baseline_mutations)
+baseline_ch = pd.read_csv(baseline_ch_path)
 clin_df=pd.read_csv(path_clin_data, sep="\t", skiprows=1)[["Patient", "Neutrophil lymphocyte ratio"]].rename(columns={"Patient": "Patient_id"})
 
 def return_blood_counts(pts, variable_name):
@@ -111,9 +117,8 @@ def run_mwu_binary_ch(bc_dict):
     return(mwu_dict)
     
 
-
 def main_boxp_plotting_function(blood_count, vaf_groups=None, is_binary=False, suffix="", arms=None, figures=figures):
-    fig = plt.figure(figsize=(8, 4) if arms else (4, 3))
+    fig = plt.figure(figsize=(7, 4) if arms else (3, 3))
     arms = arms or []
     
     # Ensure there is at least one arm, so the len(arms) doesn't raise an error
