@@ -9,6 +9,19 @@ import matplotlib.gridspec as gridspec
 import statsmodels.api as sm
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
+mpl.rcParams['font.size'] = 8
+mpl.rcParams['text.color'] = 'k'
+mpl.rcParams['legend.fontsize'] = 6
+mpl.rcParams['legend.handletextpad'] = '0.8'
+mpl.rcParams['legend.labelspacing'] = '0.4'
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+mpl.rcParams['axes.linewidth'] = 1
+mpl.rcParams['xtick.labelsize'] = 8
+mpl.rcParams['ytick.labelsize'] = 8
+mpl.rcParams['axes.labelsize'] = 8
+mpl.rcParams['font.family'] = 'Arial'
+
 def CH_presence_line_thresholds(muts_df, age_df, PATH_sample_information, ax, axforest, fontsize = 10):
     """
     Plos the fraction of the cohort that is CH positive in each age.
@@ -151,7 +164,7 @@ def CH_presence_line_thresholds(muts_df, age_df, PATH_sample_information, ax, ax
     else:
         return(ax)
 
-fig, ax = plt.subplots(figsize=(3, 3))  # adjust figsize as needed
+fig, ax = plt.subplots(figsize=(2.6, 2.5))  # adjust figsize as needed
 
 project_dir = os.environ.get("project_dir")
 baseline_ch_path=f"{project_dir}/CH_baseline.csv"
@@ -164,7 +177,7 @@ age_df = pd.read_csv(age_path)
 
 dict_box_colors = {"LuPSMA": (220/255, 20/255, 60/255, 0.3), "Cabazitaxel": (154/255, 205/255, 50/255, 0.3)}
 ax_forest = inset_axes(ax, width="25%", height="17%", loc='upper left')
-ax = CH_presence_line_thresholds(baseline_ch, age_df, PATH_sample_information, ax, axforest = ax_forest, fontsize = 8)
+ax = CH_presence_line_thresholds(baseline_ch, age_df, path_sample_info, ax, axforest = ax_forest, fontsize = 8)
 
 fig.tight_layout()
 fig.savefig(f"{dir_figures}/SUPP_age_and_CH.png")
