@@ -14,12 +14,12 @@ project_dir = os.environ.get("project_dir")
 baseline_ch_path=f"{project_dir}/CH_baseline.csv"
 dir_figures=f"{project_dir}/figures/supp"
 path_sample_info = f"{project_dir}/resources/sample_info.tsv"
-path_age_df=f"{dir_figures}/resources/age.csv"
+path_age_df=f"{project_dir}/resources/age.csv"
 
 color_dict={1: "#FFA0A0", 2: "#FF6565", 3: "#FF0000"}
 
 # Load CH dataset
-ch=pd.read_csv(path_baseline_ch)
+ch=pd.read_csv(baseline_ch_path)
 
 # Load sample info and get arm-specific subsets
 sample_info = pd.read_csv(path_sample_info, sep="\t")
@@ -56,7 +56,7 @@ clin_data = pd.read_csv(path_age_df)
 norm = Normalize(vmin=clin_data["Age"].min(), vmax=clin_data["Age"].max())
 cmap = cm.get_cmap("Blues")
 clin_data["Age_color"] = clin_data["Age"].apply(lambda age: cmap(norm(age)))
-clin_data = clin_data.merge(samples_enumerated, on="Patient_id").merge(prog_info, on="Patient_id")
+clin_data = clin_data.merge(samples_enumerated, on="Patient_id").merge(sample_info[["Patient_id", "Arm"]])
 
 # Compute gene frequency for horizontal bar plot
 gene_freq = gene_counts[["Arm", "Gene", "Count", "Color"]].value_counts().reset_index(name="npts")
@@ -72,7 +72,7 @@ ch_subset["VAF log"]=np.log10(ch_subset["VAF"])
 ######################################
 # Plotting
 ######################################
-fig = plt.figure(figsize=(8, 5))
+fig = plt.figure(figsize=(9, 3.5))
 gs_outer=gridspec.GridSpec(1, 3, width_ratios=[1,1,0.35], wspace=0.1)
 
 gs_lu=gridspec.GridSpecFromSubplotSpec(4, 2, width_ratios=[1, 0.3], height_ratios=[3, 4, 3, 0.4], wspace=0, subplot_spec=gs_outer[0])
