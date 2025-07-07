@@ -100,15 +100,13 @@ with open(path_utilities, 'r') as file:
 exec(script_code)
 
 arm_color_dict={"LuPSMA": "#6f1fff", "Cabazitaxel": "#3e3939"}
-arm_color_dict_lighter={"LuPSMA": "#d3bbfe", "Cabazitaxel": "#b2b0b0"}
-arm_color_dict_darker={"LuPSMA": "#e8e3f2", "Cabazitaxel": "#000000"}
 
 baseline_ch = pd.read_csv(baseline_ch_path)
 baseline_ch=harmonize_vaf_columns(baseline_ch, timepoint="Baseline")
 
 # PLOTTING
 # Baseline CH
-fig, ax = plt.subplots(figsize=(7, 4))
+fig, ax = plt.subplots(figsize=(3.7, 3))
 genes_list=["DNMT3A", "TET2", "ASXL1", "TP53", "PPM1D", "ATM", "CHEK2", "KMT2D", "SF3B1"]
 
 ax=make_boxp_for_vaf(muts_df=baseline_ch, lighter_color_dict=arm_color_dict, darker_color_dict=arm_color_dict, ax=ax, genes_list=genes_list)
