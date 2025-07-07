@@ -125,7 +125,7 @@ domain_color_dict = {"PWWP": "limegreen",
                      "ASHX":"lightcoral",
                      "PHD_3":"cornflowerblue"}
 
-fig = plt.figure(figsize=(8, 8))
+fig = plt.figure(figsize=(5, 3.2))
 gs_outer = gridspec.GridSpec(2, 1, height_ratios=[2, 0.2], hspace = 0.1, wspace = 0)
 
 gs_genes = gridspec.GridSpecFromSubplotSpec(5, 1, height_ratios=[1,1,1,1,1], subplot_spec=gs_outer[0], wspace=0.5, hspace = 0.5)
@@ -209,5 +209,5 @@ legend_ax.tick_params(axis='both', which='both', bottom=False, top=False, left=F
 legend_ax.set_facecolor('none')
 
 gs_outer.tight_layout(fig)
-fig.savefig("{dir_figures}/SUPP_baseline_lollipops.png")
-fig.savefig("{dir_figures}/SUPP_baseline_lollipops.pdf")
+fig.savefig(f"{dir_figures}/SUPP_baseline_lollipops.png")
+fig.savefig(f"{dir_figures}/SUPP_baseline_lollipops.pdf")
