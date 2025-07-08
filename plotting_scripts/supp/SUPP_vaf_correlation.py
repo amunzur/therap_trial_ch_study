@@ -79,7 +79,7 @@ progression_ch = pd.read_csv(progression_ch_path)
 progression_ch=progression_ch[progression_ch["Independently detected at baseline"]==False]
 
 # PLOTTING
-fig = plt.figure(figsize=(8, 3))
+fig = plt.figure(figsize=(6, 3))
 
 gs_outer=gridspec.GridSpec(1, 3, width_ratios=[1,1,0.5], hspace=0.38, wspace=0.3)
 baseline_ax=fig.add_subplot(gs_outer[0])  
