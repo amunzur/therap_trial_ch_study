@@ -26,54 +26,146 @@ from statsmodels.stats.proportion import proportions_ztest
 from scipy.stats import fisher_exact
 import statsmodels.api as sm
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from scipy import stats
 
 mpl.rcParams['font.size'] = 10
 mpl.rcParams['text.color'] = 'k'
-mpl.rcParams['legend.fontsize'] = 10
+mpl.rcParams['legend.fontsize'] = 8
 mpl.rcParams['legend.handletextpad'] = '0.8'
 mpl.rcParams['legend.labelspacing'] = '0.4'
 mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['axes.linewidth'] = 1
-mpl.rcParams['xtick.labelsize'] = 10
-mpl.rcParams['ytick.labelsize'] = 10
+mpl.rcParams['xtick.labelsize'] = 8
+mpl.rcParams['ytick.labelsize'] = 8
 mpl.rcParams['axes.labelsize'] = 10
 
 """
 From baseline to progression plots VAF change in DDR and DTA genes in LuPSMA vs Cabazitaxel arms.
 """
 
-def plot_pie(df, ax, baseline_colname="Baseline_VAF", prog_colname="Progression_VAF", gene_subset=None, arm=None):
+def round_sig(x, sig=2):
     """
+    Rounds to n significant figures.
     """
-    if gene_subset is not None:
-        df=df[df["Gene"].isin(gene_subset)]
+    if x == 0:
+        return 0
+    return round(x, sig - int(np.floor(np.log10(abs(x)))) - 1)
+
+def plot_boxp_vaf_changes(mutations_df, arm_color_dict, ax_boxp):
+    """
+    Plots a boxplot comparing the median VAF change in two treatment arms.
+    """
+    raw_vaf_data_dict={}
+    for xpos, arm in enumerate(["LuPSMA", "Cabazitaxel"]):
+        arm_subset_df=mutations_df[mutations_df["Arm"]==arm]
+        arm_subset_df["VAF change"]=arm_subset_df["Progression VAF"]-arm_subset_df["Baseline VAF"]
+                
+        # Plot swarm plot
+        vaf_data=arm_subset_df["VAF change"]
+        for vaf in vaf_data:
+                jitter=np.random.uniform(-0.3, 0.3, 1)
+                ax_boxp.scatter(xpos+jitter, vaf, color=arm_color_dict[arm], s=0.5, alpha=0.5)
+                
+        # Append raw VAF change values for significance test
+        raw_vaf_data_dict[arm]=arm_subset_df["VAF change"]
     
-    if arm is not None:
-        df=df[df["Arm"]==arm]
+        # Annotate median and run
+        median = round_sig(np.median(vaf_data))
+        iqr = [round_sig(np.percentile(vaf_data, 25)), round_sig(np.percentile(vaf_data, 75))]
+        ax_boxp.text(xpos, 30, median, fontsize=6, ha="center")
+        ax_boxp.text(xpos, 25, iqr, fontsize=6, ha="center")
+        
+    # Run significance test
+    mwu_result=mannwhitneyu(raw_vaf_data_dict["LuPSMA"], raw_vaf_data_dict["Cabazitaxel"])
+    pval=mwu_result.pvalue
+    pval_rounded=round_sig(pval, 4)
+    ax_boxp.text(0.5, 20, f"MWU p={pval_rounded}", fontsize=6)
     
-    ax.spines[["top", "right", "left", "bottom"]].set_visible(False)
+    # AES
+    # ax_boxp.set_ylim((-np.log10(26), np.log10(34)))
+    # ax_boxp.set_yticks([-np.log10(20), -np.log10(10), np.log10(0), np.log10(10), np.log10(20), np.log10(30)])
+    # ax_boxp.set_yticklabels(["-20", "-10", "0", "10", "20", "30"])
+    ax_boxp.set_xticks([0, 1])
+    ax_boxp.set_xticklabels(["LuPSMA", "Cabazitaxel"])
+    ax_boxp.set_xlim((-0.7, 1.3))
+    ax_boxp.spines[["top", "right"]].set_visible(False)
+    ax_boxp.set_ylabel("VAF%")
     
-    incr_muts=0
-    decr_muts=0
-    for i, row in df.iterrows():
-        baseline_ch_vaf=row[baseline_colname]
-        prog_ch_vaf=row[prog_colname]
-        if prog_ch_vaf>baseline_ch_vaf: 
-            incr_muts+=1
+    return(ax_boxp)
+
+
+
+
+def make_boxp_for_vaf(muts_df, lighter_color_dict, darker_color_dict, ax, genes_list, add_legend=True):
+    """
+    Makes boxplots with swarm plot to compare the VAF between treatment groups
+    """    
+    xtick_list = []
+    raw_pvals = []
+    pval_positions = []
+    
+    for i, gene in enumerate(genes_list):
+        vaf_data = {}
+        for arm, offset in zip(["LuPSMA", "Cabazitaxel"], [-0.15, 0.15]):
+            gene_vafs_list=np.log10(muts_df[(muts_df["Gene"]==gene)&(muts_df["Arm"]==arm)]["VAF%"])
+            xpos=i+offset
+            vaf_data[arm] = gene_vafs_list
+            
+            # Plot scatter
+            for vaf in gene_vafs_list:
+                jitter=np.random.uniform(-0.1, 0.1, 1)
+                ax.scatter(xpos+jitter, vaf, color=lighter_color_dict[arm], s=2)
+            
+            # Plot boxp. no facecolor.
+            box = ax.boxplot(gene_vafs_list, positions=[xpos], widths=0.12,
+                             patch_artist=True, showcaps=False, boxprops=dict(facecolor='none', color=darker_color_dict[arm]),
+                             whiskerprops=dict(color=darker_color_dict[arm]),
+                             medianprops=dict(color=darker_color_dict[arm]),
+                             flierprops=dict(marker='o', markersize=0, linestyle='none'))
+            
+        # Store raw p-value for later correction
+        if all(len(vaf_data[arm]) > 0 for arm in ["LuPSMA", "Cabazitaxel"]):
+            stat, p = mannwhitneyu(vaf_data["LuPSMA"], vaf_data["Cabazitaxel"], alternative='two-sided')
+            raw_pvals.append(p)
+            pval_positions.append(i)
         else:
-            decr_muts+=1
+            raw_pvals.append(np.nan)
+            pval_positions.append(i)
+                
+        xtick_list.append(i)
     
-    ax.pie([incr_muts, decr_muts], labels=["VAF↑", "VAF↓"], autopct='%d%%', startangle=140, colors=["tomato", "deepskyblue"])
+    # Correct for multiple comparisons
+    corrected = multipletests(raw_pvals, method='fdr_bh')
+    corrected_pvals = corrected[1]
+    
+    # Annotate adjusted p-values
+    for i, p in zip(pval_positions, corrected_pvals):
+        if np.isnan(p):
+            continue
+        p_text = f"p={p:.1g}" if p <= 0.05 else "ns"
+        ax.text(i, np.log10(105), p_text, ha="center", fontsize=8)
+    
+    ax.set_ylim((np.log10(0.2), np.log10(100)))
+    ax.set_yticks([np.log10(0.25), np.log10(0.5), np.log10(1), np.log10(2), np.log10(10), np.log10(50), np.log10(100)])
+    ax.set_yticklabels(["0.25", "0.5", "1", "2", "10", "50", "100"])
+    ax.set_xticks(xtick_list)
+    ax.set_xticklabels(genes_list, rotation=90, fontstyle="italic")
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.set_ylabel("VAF%")
+    
+    # Add legend
+    if add_legend:
+        legend_colors = darker_color_dict.values()
+        legend_labels = darker_color_dict.keys()
+        legend_handles = [plt.Line2D([0], [0], marker='s', color=color, label=label, markersize=5, linestyle='') for color, label in zip(legend_colors, legend_labels)]
+        ax.legend(handles=legend_handles, loc="upper right", frameon=False, handlelength=2, handletextpad = 0.1, ncol=1)
+    
     return(ax)
 
-utilities="/groups/wyattgrp/users/amunzur/therap_trial_ch_study/plotting_scripts/utilities.py"
 
-for path in [utilities]:
-    with open(path, 'r') as file:
-        script_code = file.read()
-    
-    exec(script_code)
+
+
 
 
 # LOAD CHIP DATASETS
@@ -81,8 +173,16 @@ project_dir = os.environ.get("project_dir")
 
 dir_figures=f"{project_dir}/figures/main"
 baseline_ch_path=f"{project_dir}/CH_baseline.csv"
-prog_ch_path="{project_dir}/CH_progression.csv"
+prog_ch_path=f"{project_dir}/CH_progression.csv"
 path_sample_information = f"{project_dir}/resources/sample_info.tsv"
+
+utilities=f"{project_dir}/plotting_scripts/utilities.py"
+
+for path in [utilities]:
+    with open(path, 'r') as file:
+        script_code = file.read()
+    
+    exec(script_code)
 
 sample_info=pd.read_csv(path_sample_information, sep="\t")
 color_dict={"LuPSMA": "#8d75bd", "Cabazitaxel": "#7faf9d"}
@@ -112,14 +212,18 @@ combined_muts=pd.concat([baseline_ch_subset, progression_ch], ignore_index=True)
 combined_muts.loc[combined_muts["Baseline VAF"]==0, "Baseline VAF"]=0.25
 combined_muts.loc[combined_muts["Progression VAF"]==0, "Progression VAF"]=0.25
 
-fig = plt.figure(figsize=(6, 5))
-outer_gs = gridspec.GridSpec(3, 2, height_ratios=[1, 1, 0.2], width_ratios=[1, 1], hspace = 0.15, wspace = 0.15)
+fig = plt.figure(figsize=(5, 5))
+outer_gs = gridspec.GridSpec(4, 3, height_ratios=[1, 1, 1, 0.2], width_ratios=[1, 1, 0.6], hspace = 0.15, wspace = 0.1)
 
+all_genes=combined_muts["Gene"].unique()
 DTA_genes=['DNMT3A', 'TET2', 'ASXL1']
 DDR_genes=['PPM1D', 'TP53', 'ATM', 'CHEK2']
 
+arm_color_dict={"LuPSMA": "#6f1fff", "Cabazitaxel": "#3e3939"}
+
 first_ax = None
-for i, (genes_list, genes_list_name) in enumerate(zip([DTA_genes, DDR_genes], ["DTA", "DDR"])):
+for i, (genes_list, genes_list_name) in enumerate(zip([all_genes, DTA_genes, DDR_genes], ["All genes", "DTA", "DDR"])):
+        
     for j, arm in enumerate(["LuPSMA", "Cabazitaxel"]):
         if first_ax is None:
             ax = plt.subplot(outer_gs[i, j])  # First subplot
@@ -130,7 +234,7 @@ for i, (genes_list, genes_list_name) in enumerate(zip([DTA_genes, DDR_genes], ["
         subset_muts=combined_muts[(combined_muts["Gene"].isin(genes_list)) & (combined_muts["Arm"]==arm)]
         
         ax_pie=inset_axes(ax, width="35%", height="35%", loc='upper left')
-        ax_pie=plot_pie(subset_muts, gene=None, ax_pie=ax_pie, label_var_incr=True)
+        ax_pie=plot_pie(subset_muts, gene=None, ax_pie=ax_pie)
         
         ax, nmuts=plot_vaf_change(subset_muts, gene=None, ax=ax, plot_delta=True, plot_days=False)
         ax.set_title(f"{genes_list_name} {arm}")
@@ -142,9 +246,14 @@ for i, (genes_list, genes_list_name) in enumerate(zip([DTA_genes, DDR_genes], ["
         
         if j>0:
             ax.set_ylabel("")
+        
+    # Plot the boxplot of VAF changes
+    ax_boxp=plt.subplot(outer_gs[i, 2], sharey=ax)
+    mutations_df=combined_muts[combined_muts["Gene"].isin(genes_list)]
+    ax_boxp=plot_boxp_vaf_changes(mutations_df, arm_color_dict, ax_boxp=ax_boxp)
 
 # Add legend
-ax_legend=plt.subplot(outer_gs[2, 0])
+ax_legend=plt.subplot(outer_gs[3, 0])
 ax_legend.axis("off")
 legend_colors = ["orangered", "royalblue", "mediumseagreen"]
 legend_labels = ["VAF↑", "Stable", "VAF↓"]
