@@ -64,6 +64,7 @@ def compare_growth_rate_baseline_and_prog_BOX(df, ax, boxp_color_dict, scatter_c
     ax.set_ylim((-0.2, 0.3))
     # ax.tick_params("x", bottom=False)
     ax.spines[["top", "right"]].set_visible(False)
+        
     return(ax)
 
 project_dir = os.environ.get("project_dir")
@@ -113,27 +114,32 @@ combined_muts.loc[combined_muts["Progression VAF"]==0, "Progression VAF"]=0.25
 
 weeks_to_progression=pd.read_csv(path_weeks_to_progression)
 combined_muts=combined_muts.merge(weeks_to_progression)
-combined_muts["Growth rate"]=np.log(combined_muts["Progression VAF"]/combined_muts["Baseline VAF"])/combined_muts["Date diff in weeks"]
+combined_muts["Date diff in months"]=combined_muts["Date diff in weeks"]/4
+combined_muts["Growth rate"]=np.log(combined_muts["Progression VAF"]/combined_muts["Baseline VAF"])/combined_muts["Date diff in months"]
 
-fig = plt.figure(figsize=(2.5, 8))
-gs = GridSpec(2, 1, figure=fig)
-ax_ddr = fig.add_subplot(gs[0])
-ax_dta = fig.add_subplot(gs[1])
-
+all_genes=combined_muts["Gene"].unique()
 dta_genes=["DNMT3A", "TET2", "ASXL1"]
 ddr_genes=["PPM1D", "TP53", "ATM", "CHEK2"]
 
-combined_muts_ddr=combined_muts[combined_muts["Gene"].isin(ddr_genes)]
-combined_muts_dta=combined_muts[combined_muts["Gene"].isin(dta_genes)]
+fig = plt.figure(figsize=(2.5, 5))
+gs = GridSpec(3, 1, figure=fig, hspace = 0.35, wspace = 0.1, height_ratios=[1,1,1])
 
-ax_ddr=compare_growth_rate_baseline_and_prog_BOX(combined_muts_ddr, ax_ddr, boxp_color_dict=arm_color_dict_lighter, scatter_color_dict=arm_color_dict)
-ax_dta=compare_growth_rate_baseline_and_prog_BOX(combined_muts_dta, ax_dta, boxp_color_dict=arm_color_dict_lighter, scatter_color_dict=arm_color_dict)
+for i, (genes_list, genes_list_name) in enumerate(zip([all_genes, DTA_genes, DDR_genes], ["All genes", "DTA", "DDR"])):
+    ax=plt.subplot(gs[i])
+    df=combined_muts[combined_muts["Gene"].isin(genes_list)]
+    ax=compare_growth_rate_baseline_and_prog_BOX(df, ax, boxp_color_dict=arm_color_dict_lighter, scatter_color_dict=arm_color_dict)
+    
+    if genes_list_name!= "DDR":
+        ax.set_ylim((-0.7, 0.8))
+    else:
+        min_gr=df["Growth rate"].min()
+        max_gr=df["Growth rate"].max()
+        ax.set_ylim((min_gr-0.05, max_gr+0.05))
+        ax.set_yticks([0, 0.4, 0.8])
+        ax.set_yticklabels(["0", "0.4", "0.8"])
+    
+    ax.set_title(genes_list_name)
 
-ax_ddr.set_title("DDR genes")
-ax_dta.set_title("DTA genes")
-
-ax_ddr.set_ylim((-0.22, 0.25))
-ax_dta.set_ylim((-0.22, 0.25))
-
+gs.tight_layout(fig)
 fig.savefig(os.path.join(dir_figures, "MAIN_growth_rate.png"))
 fig.savefig(os.path.join(dir_figures, "MAIN_growth_rate.pdf"), transparent=True)
