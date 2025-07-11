@@ -37,7 +37,7 @@ muts_group1=max_ch_df[(max_ch_df["VAF_n"]>=0.25) & (max_ch_df["VAF_n"]<2)].merge
 muts_group2=max_ch_df[(max_ch_df["VAF_n"]>=2) & (max_ch_df["VAF_n"]<10)].merge(sample_info[['Patient_id', 'Arm']].drop_duplicates())
 muts_group3=max_ch_df[max_ch_df["VAF_n"]>=10].merge(sample_info[['Patient_id', 'Arm']].drop_duplicates())
 muts_group4=pd.concat([ch_neg, muts_group1[["Patient_id", "Arm"]]])
-                                
+
 color_dict_psa50_response={"Yes": "#c0cced", "No": "#ffbba2"}
 color_dict_arm={"LuPSMA": "#6f1fff", "Cabazitaxel": "#3e3939"}
 ntotal_dict={"LuPSMA": 94, "Cabazitaxel": 80}
@@ -119,8 +119,9 @@ def plot_psa_response_bar_grid(fig, gs, groups, y_labels, add_legend_bar=True, a
             ax.set_xticklabels(ticklabel_list, fontsize=8)
         
         ax.spines[["top", "right"]].set_visible(False)
-        ax.set_yticks([0, 20, 40, 60, 80])
-        ax.set_yticklabels(["0", "20", "40", "60", "80"], fontsize=8)
+        ax.set_ylim((0, 40))
+        ax.set_yticks([0, 10, 20, 30, 40])
+        ax.set_yticklabels(["0", "10", "20", "30", "40"], fontsize=8)
         ax.set_ylabel("n patients")
         
         # Run significance test and print on plot
@@ -145,15 +146,15 @@ fig = plt.figure(figsize=(5.5, 4))
 gs = gridspec.GridSpec(2, 3, figure=fig, width_ratios=[1, 1, 0.5], hspace=0.3, wspace=0.4)
 plot_psa_waterfall_grid(fig, gs, [ch_neg, ch_pos], ["CH-", "CH+"])
 plot_psa_response_bar_grid(fig, gs, [ch_neg, ch_pos], ["CH-", "CH+"])
-fig.savefig(os.path.join(dir_figures, "main", "MAIN_PSA_response_CH_positive_vs_negative.png"))
-fig.savefig(os.path.join(dir_figures, "main", "MAIN_PSA_response_CH_positive_vs_negative.pdf"), transparent=True)
+fig.savefig(os.path.join(dir_figures, "MAIN_PSA_response_CH_positive_vs_negative.png"))
+fig.savefig(os.path.join(dir_figures, "MAIN_PSA_response_CH_positive_vs_negative.pdf"), transparent=True)
 
 # Plot 1: Stratification based on CH VAF
 fig = plt.figure(figsize=(8, 5))
 gs = gridspec.GridSpec(2, 5, figure=fig, width_ratios=[1, 1, 1, 1, 0.5], hspace=0.5)
 plot_psa_waterfall_grid(fig, gs, [ch_neg, muts_group1, muts_group2, muts_group3], ["CH-", "0.25%-2%", "2-10%", "≥10%"])
 plot_psa_response_bar_grid(fig, gs, [ch_neg, muts_group1, muts_group2, muts_group3], ["CH-", "0.25%-2%", "2-10%", "≥10%"])
-fig.savefig(os.path.join(dir_figures, "supp", "SUPP_PSA_response_vs_CH_4bins.png"))
-fig.savefig(os.path.join(dir_figures, "supp", "SUPP_PSA_response_vs_CH_4bins.pdf"), transparent=True)
+fig.savefig(os.path.join(dir_figures, "SUPP_PSA_response_vs_CH_4bins.png"))
+fig.savefig(os.path.join(dir_figures, "SUPP_PSA_response_vs_CH_4bins.pdf"), transparent=True)
 
 
