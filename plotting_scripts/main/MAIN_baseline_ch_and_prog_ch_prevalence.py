@@ -7,6 +7,8 @@ import matplotlib.gridspec as gridspec
 from scipy.stats import fisher_exact
 from statsmodels.stats.proportion import proportions_ztest
 from matplotlib.lines import Line2D
+import os
+from statsmodels.stats.multitest import multipletests
 
 mpl.rcParams['hatch.linewidth'] = 0.3
 mpl.rcParams['font.size'] = 8
@@ -22,7 +24,7 @@ mpl.rcParams['ytick.labelsize'] = 8
 mpl.rcParams['axes.labelsize'] = 8
 mpl.rcParams['font.family'] = 'Arial'
 
-def plot_ch_prevalence_by_arm(muts_df, path_sample_information, color_dict, ax, annotate_what, add_legend= True, lu_pts_n_total = None, caba_pts_n_total = None, add_p_values = True, minvaf=0):
+def plot_ch_prevalence_by_arm(muts_df, path_sample_info, color_dict, ax, annotate_what, add_legend= True, lu_pts_n_total = None, caba_pts_n_total = None, add_p_values = True, minvaf=0):
     """
     Plots the presence / absence of CH in the cohort as bar charts. Separates into two groups.
     """
@@ -35,17 +37,12 @@ def plot_ch_prevalence_by_arm(muts_df, path_sample_information, color_dict, ax, 
         combined_col_name = primary.replace("_n", "").replace("WBC ", "")
         muts_df[combined_col_name] = muts_df[primary].combine_first(muts_df[fallback])
     
-    sample_info = pd.read_csv(path_sample_information, sep = "\t")    
+    sample_info = pd.read_csv(path_sample_info, sep = "\t")    
     
     if lu_pts_n_total is None and caba_pts_n_total is None:
         lu_pts_n_total = sample_info[sample_info["Arm"] == "LuPSMA"]["Patient_id"].drop_duplicates().shape[0]
         caba_pts_n_total = sample_info[sample_info["Arm"] == "Cabazitaxel"]["Patient_id"].drop_duplicates().shape[0]
         
-    # if annotate_what.lower() == "chip":
-    #     col_to_filter = "VAF_n"
-    # else:
-    #     col_to_filter = "VAF_t"
-    
     col_to_filter="VAF"
     
     results_dict = {}
@@ -54,14 +51,16 @@ def plot_ch_prevalence_by_arm(muts_df, path_sample_information, color_dict, ax, 
         
         lu_pts = muts_df_filtered[muts_df_filtered["Arm"] == "LuPSMA"]["Patient_id"].unique().shape[0]
         lu_perc = round((lu_pts/lu_pts_n_total)*100)
+        lu_without_pts=lu_pts_n_total-lu_pts
         
         caba_pts = muts_df_filtered[muts_df_filtered["Arm"] == "Cabazitaxel"]["Patient_id"].unique().shape[0]
         caba_perc = round((caba_pts/caba_pts_n_total)*100)
+        caba_without_pts=caba_pts_n_total-caba_pts
         
         print(f"For min vaf {min_vaf} nlu_pts in {lu_pts}, ncaba_pts is {caba_pts}")
         
         # save results
-        results_dict[min_vaf] = {"LuPSMA perc": lu_perc, "Cabazitaxel perc": caba_perc, "LuPSMA npts": lu_pts, "Cabazitaxel npts": caba_pts}
+        results_dict[min_vaf] = {"LuPSMA perc": lu_perc, "Cabazitaxel perc": caba_perc, "LuPSMA npts": lu_pts, "Cabazitaxel npts": caba_pts, "LuPSMA without pts": lu_without_pts, "Cabazitaxel without pts": caba_without_pts}
         # sum_perc = (lu_pts + caba_pts)/(group1_ntotal+group2_ntotal)
         # print(f"Min vaf={min_vaf}, {sum_perc}")
     
@@ -75,32 +74,25 @@ def plot_ch_prevalence_by_arm(muts_df, path_sample_information, color_dict, ax, 
         ax.text(i - 0.2, row["LuPSMA perc"]+1, str(row["LuPSMA npts"]), ha='center', va='bottom', fontsize=6, color='black')
         ax.text(i + 0.2, row["Cabazitaxel perc"]+1, str(row["Cabazitaxel npts"]), ha='center', va='bottom', fontsize=6, color='black')
     
-    # Z test
+    # Fisher's exact test
     if add_p_values:
-        p_values_ztest = []
-        nobs = np.array([lu_pts_n_total, caba_pts_n_total])
-        for i, (group1_count, group2_count) in enumerate(zip(df["LuPSMA npts"], df["Cabazitaxel npts"])):
-            counts = np.array([group1_count, group2_count])
-            _, p_val = proportions_ztest(counts, nobs, alternative="larger")  # alternative="larger" for one-sided test
-            p_values_ztest.append(p_val)
-        
-        for i, p_val in enumerate(p_values_ztest):
-            ypos=97
-            # Get the bladder count, the p values will be annotated right on top of it.
-            count_value = df.loc[i, "LuPSMA perc"]
-            if p_val < 0.001:
-                ax.text(i, ypos, "***", ha='center', va='bottom', color='black')
-                print(f"p value at x position {i} is {p_val}")
-            elif p_val < 0.01:
-                ax.text(i, ypos, "**", ha='center', va='bottom', color='black')
-                print(f"p value at x position {i} is {p_val}")
-            elif p_val < 0.05:
-                ax.text(i, ypos, "*", ha='center', va='bottom', color='black')
-                print(f"p value at x position {i} is {p_val}")
-            elif p_val>=0.05:
-                ax.text(i, ypos, "ns", ha='center', va='bottom', color='black')
-                print(f"p value at x position {i} is {p_val}")
+        pvalues_list = []
+        for i, min_vaf in enumerate([0, 2, 10]):
+            res = results_dict[min_vaf]
             
+            table = [
+                [res["LuPSMA npts"], res["LuPSMA without pts"]],
+                [res["Cabazitaxel npts"], res["Cabazitaxel without pts"]]]
+            
+            odds_ratio, p_value = fisher_exact(table, alternative='two-sided')
+            p_value_rounded=round_sig(p_value, 3)
+            
+            ypos=97
+            if p_value>0.05:
+                ax.text(i, ypos, "ns", ha='center', va='bottom', color='black', fontsize=6)
+            else: 
+                ax.text(i, ypos, p_value_rounded, ha='center', va='bottom', color='black', fontsize=6)
+    
     ax.set_xlim((-0.7, 2.5))
     ax.set_xticks([0, 1, 2])
     # ax.tick_params(axis='x', bottom=False)
@@ -138,13 +130,15 @@ def plot_genewise_ch_mutations_by_arm(muts_df, genes_list, path_sample_info, gen
         division_factor_dict={'LuPSMA': 1, 'Cabazitaxel': 1}
     else:
         sample_info=pd.read_csv(path_sample_info, sep="\t")
-        ntotal_lu=sample_info[(sample_info["Timepoint"]==timepoint) & (sample_info["Arm"]=="LuPSMA") & (sample_info["Cohort"]=="TheraP")].shape[0]
-        ntotal_caba=sample_info[(sample_info["Timepoint"]==timepoint) & (sample_info["Arm"]=="Cabazitaxel") & (sample_info["Cohort"]=="TheraP")].shape[0]
+        ntotal_lu=sample_info[(sample_info["Timepoint"]==timepoint) & (sample_info["Arm"]=="LuPSMA")].shape[0]
+        ntotal_caba=sample_info[(sample_info["Timepoint"]==timepoint) & (sample_info["Arm"]=="Cabazitaxel")].shape[0]
         division_factor_dict={'LuPSMA': ntotal_lu, 'Cabazitaxel': ntotal_caba}
     
     xtick_list=[]
     xticklabel_list=[]
     
+    raw_pvals = []
+    gene_indices = []
     for i, gene in enumerate(genes_list):
         contingency_table = []  # For Fisher's exact test
         y_positions=[]  # Store y positions for later 
@@ -182,20 +176,15 @@ def plot_genewise_ch_mutations_by_arm(muts_df, genes_list, path_sample_info, gen
         ymax=ax.get_ylim()[1]
         if len(contingency_table) == 2:
             odds_ratio, p_value = fisher_exact(contingency_table)
-            # Find the correct y-position for p-value annotation
-            pval_y_pos = max(y_positions)  # Place on the upper side   
-            if pvalue:
-                pval_y_pos=0.41
-                if p_value>=0.05:
-                    to_print="ns"
-                elif p_value<=0.05:
-                    to_print="*"
-                elif p_value<=0.01:
-                    to_print="**"
-                elif p_value<=0.001:
-                    to_print="***"
-                ax.text(i, ymax, to_print, ha="center", va="top", fontsize=8, color="black")      
-                print(f"p value at x position {i} is {p_value}")        
+            raw_pvals.append(p_value)
+            gene_indices.append(i)
+    
+    rejected, pvals_corrected, _, _ = multipletests(raw_pvals, alpha=0.05, method='fdr_bh')
+    
+    # Annotate p values on plot
+    for idx, pval_corr, is_sig in zip(gene_indices, pvals_corrected, rejected):
+        pval_str = f"{round_sig(pval_corr, 3)}"
+        ax.text(idx, ax.get_ylim()[1], pval_str, ha="center", va="top", fontsize=6, color="black")
     
     if raw_counts:
         ax.set_ylim((0, 80))
@@ -349,7 +338,7 @@ ax1_row1=plt.subplot(gs_outer[1,1])
 ax2_row1=plt.subplot(gs_outer[1,2])
 ax2_row1_legend=plt.subplot(gs_outer[1,3])
 
-ax0_row0=plot_ch_prevalence_by_arm(baseline_ch, path_sample_info, arm_color_dict, ax0_row0, annotate_what = "CHIP")
+ax0_row0=plot_ch_prevalence_by_arm(baseline_ch, path_sample_info, arm_color_dict, ax0_row0, lu_pts_n_total = 96, caba_pts_n_total = 82, annotate_what = "CHIP")
 ax0_row1=plot_ch_prevalence_by_arm(progression_ch, path_sample_info, arm_color_dict, ax0_row1, lu_pts_n_total = 60, caba_pts_n_total = 47, annotate_what = "CHIP")
 
 genes_list=['DNMT3A', 'TET2', 'ASXL1', 'ATM', 'CHEK2', 'PPM1D', 'TP53']
@@ -368,5 +357,5 @@ ax2_row1.set_yticklabels(["0", "50", "100", "150"])
 ax2_row0_legend=add_gene_name_legend(gene_color_dict, ax2_row0_legend)
 ax2_row1_legend=add_gene_name_legend(gene_color_dict, ax2_row1_legend)
 
-fig.savefig(f"{dir_figures}/baseline_and_prog_ch_prevalence.png")
+fig.savefig(f"{dir_figures}/test.png")
 fig.savefig(f"{dir_figures}/baseline_and_prog_ch_prevalence.pdf", facecolor='none', transparent=True)
