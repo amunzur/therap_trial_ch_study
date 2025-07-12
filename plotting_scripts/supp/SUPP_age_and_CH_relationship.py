@@ -172,6 +172,14 @@ age_path=f"{project_dir}/resources/age.csv"
 dir_figures=f"{project_dir}/figures/supp"
 path_sample_info = f"{project_dir}/resources/sample_info.tsv"
 
+utilities=f"{project_dir}/plotting_scripts/utilities.py"
+
+for path in [utilities]:
+    with open(path, 'r') as file:
+        script_code = file.read()
+
+exec(script_code)
+
 baseline_ch=pd.read_csv(baseline_ch_path)
 age_df = pd.read_csv(age_path)
 
