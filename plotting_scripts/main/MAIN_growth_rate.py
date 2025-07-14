@@ -22,7 +22,6 @@ mpl.rcParams['ytick.labelsize'] = 8
 mpl.rcParams['axes.labelsize'] = 8
 mpl.rcParams['font.family'] = 'Arial'
 
-
 def compare_growth_rate_baseline_and_prog_BOX(df, ax, boxp_color_dict, scatter_color_dict):
     """
     Compares the growth rate of baseline and progression mutations. doesn't separate into baseline and progression.
@@ -55,8 +54,9 @@ def compare_growth_rate_baseline_and_prog_BOX(df, ax, boxp_color_dict, scatter_c
             growth_rate_list.append(gr_raw)
         
         # Run MWU on VAFs
-        p = float(f"{ttest_ind(growth_rate_list[0], growth_rate_list[1], equal_var=False).pvalue:.1g}")
-        ax.text(i, 0.25, str(f"t test\np={p}"), ha='center', va='top', fontsize=7, color='black')
+        stat, p = mannwhitneyu(growth_rate_list[0], growth_rate_list[1], alternative='two-sided')
+        p = float(f"{p:.4g}")
+        ax.text(i, 0.5, str(f"MWU\np={p}"), ha='center', va='top', fontsize=7, color='black')
     
     ax.set_ylabel("Log growth rate", labelpad=-3)
     ax.set_xticks([0, 1])
@@ -143,3 +143,21 @@ for i, (genes_list, genes_list_name) in enumerate(zip([all_genes, DTA_genes, DDR
 gs.tight_layout(fig)
 fig.savefig(os.path.join(dir_figures, "MAIN_growth_rate.png"))
 fig.savefig(os.path.join(dir_figures, "MAIN_growth_rate.pdf"), transparent=True)
+
+
+df=combined_muts.copy()
+df=df[df["Timepoint"]=="Baseline"]
+df=df[df["Gene"].isin(["DNMT3A", "TET2", "ASXL1"])]
+
+lu_df=df[df["Arm"]=="LuPSMA"]
+caba_df=df[df["Arm"]=="Cabazitaxel"]
+
+# lu mean
+lu_df["Growth rate"].mean()
+lu_df["Growth rate"].std()
+
+caba_df["Growth rate"].mean()
+caba_df["Growth rate"].std()
+
+lu_df.shape
+caba_df.shape
