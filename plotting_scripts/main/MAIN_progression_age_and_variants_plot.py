@@ -29,6 +29,7 @@ mpl.rcParams['font.family'] = 'Arial'
 project_dir = os.environ.get("project_dir")
 
 path_sample_info = f"{project_dir}/resources/sample_info.tsv"
+path_ncycles=f"{project_dir}/resources/TheraP supplementary tables - Treatment dates (22-Feb-2025).csv"
 baseline_ch_path=f"{project_dir}/CH_baseline.csv"
 progression_ch_path=f"{project_dir}/CH_progression.csv"
 path_age=f"{project_dir}/resources/age.csv"
@@ -40,7 +41,7 @@ for path in [utilities]:
     with open(path, 'r') as file:
         script_code = file.read()
 
-    exec(script_code)
+exec(script_code)
 
 
 arm_color_dict={"LuPSMA": "#6f1fff", "Cabazitaxel": "#3e3939"}
@@ -87,7 +88,6 @@ baseline_ch_main=harmonize_vaf_columns(baseline_ch_main, "Baseline")
 baseline_ch_main_subset=baseline_ch_main[baseline_ch_main["Patient_id"].isin(pts_with_progression_samples)]
 mut_status_baseline = annotate_mutation_status_lu(baseline_ch_main_subset, path_sample_info, annotate_what="CHIP", timepoint="Baseline", annotate_gene=False)
 mut_status_prog = annotate_mutation_status_lu(progression_ch_main.rename(columns={"Timepoint": "Timepoint_t"}), path_sample_info, annotate_what="CHIP", timepoint="FirstProgression", annotate_gene=False)
-
 
 # Generate nmuts df
 progression_ch = progression_ch_main[["Patient_id", "Gene", "VAF%", "Independently detected at baseline"]]
@@ -179,7 +179,7 @@ for xpos, row in pt_info.iterrows():
     # Plot number of cycles of treatment received
     ax3.bar(xpos, 1,color=cmap(norm(row["Cycle"])))
 
-    # Not plot the gene VAFs
+    # Now plot the gene VAFs
     gene_vafs_pt=gene_df[gene_df["Patient_id"]==pt_id]
     ax4.scatter(np.repeat(xpos, gene_vafs_pt.shape[0]), -gene_vafs_pt["log vaf"], color=gene_vafs_pt["color"], s=2, zorder=1)
 
@@ -270,5 +270,5 @@ for spine in cb.ax.spines.values():
 # Make ticks thinner
 cb.ax.tick_params(width=0.5)
 
-fig.savefig("{dir_figures}/MAIN_treatment_muts.png")
-fig.savefig("{dir_figures}/MAIN_treatment_muts.pdf")
+fig.savefig(f"{dir_figures}/MAIN_treatment_muts.png")
+fig.savefig(f"{dir_figures}/MAIN_treatment_muts.pdf")
