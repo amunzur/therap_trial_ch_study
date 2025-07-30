@@ -138,8 +138,8 @@ combined_muts=pd.concat([baseline_ch_subset, progression_ch], ignore_index=True)
 combined_muts.loc[combined_muts["Baseline VAF"]==0, "Baseline VAF"]=0.25
 combined_muts.loc[combined_muts["Progression VAF"]==0, "Progression VAF"]=0.25
 
-fig = plt.figure(figsize=(5, 5))
-outer_gs = gridspec.GridSpec(4, 3, height_ratios=[1, 1, 1, 0.2], width_ratios=[1, 1, 0.6], hspace = 0.15, wspace = 0.1)
+fig = plt.figure(figsize=(7, 5))
+outer_gs = gridspec.GridSpec(4, 4, height_ratios=[1, 1, 1, 0.2], width_ratios=[1, 1, 0.6, 1], hspace = 0.15, wspace = 0.1)
 
 all_genes=combined_muts["Gene"].unique()
 DTA_genes=['DNMT3A', 'TET2', 'ASXL1']
@@ -181,7 +181,8 @@ for i, (genes_list, genes_list_name) in enumerate(zip([all_genes, DTA_genes, DDR
 # Add legend
 ax_legend=plt.subplot(outer_gs[3, 0])
 ax_legend.axis("off")
-legend_colors = ["orangered", "royalblue", "mediumseagreen"]
+
+legend_colors = ["#D81B1B", "#1E88E5", "#FFC107"]
 legend_labels = ["VAF↑", "Stable", "VAF↓"]
 legend_handles = [plt.Line2D([0], [0], marker='s', color=color, label=label, markersize=5, linestyle='') for color, label in zip(legend_colors, legend_labels)]
 ax_legend.legend(handles=legend_handles, loc="lower right", frameon=False, fontsize = 8, handlelength=2, handletextpad = 0.1, ncol=3)
