@@ -162,7 +162,7 @@ def plot_pie(df, gene, ax_pie, label_var_incr=False):
             stable_muts += 1
     
     sizes = [incr_muts, decr_muts, stable_muts]
-    colors = ["orangered", "royalblue", "mediumseagreen"]
+    colors = ["#D81B1B", "#1E88E5", "#FFC107"]
     
     # Set labels: Only label "VAF↑" for the first slice (incr_muts) if label_var_incr is True
     labels = ["VAF↑" if label_var_incr else None, None, None]
@@ -189,11 +189,11 @@ def plot_vaf_change(df, gene, ax, plot_delta=True, plot_days=True):
         prog_vaf=row["Progression VAF"]
         if row["significant"]:
             if prog_vaf>base_vaf: # VAF incr
-                color="orangered"
+                color="#D81B1B"
             else:
-                color="royalblue"
+                color="#1E88E5"
         else:
-            color="mediumseagreen"
+            color="#FFC107"
         
         if plot_days:
             xpos_prog=row["Date diff in months"]
