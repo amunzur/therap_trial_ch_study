@@ -139,7 +139,7 @@ combined_muts.loc[combined_muts["Baseline VAF"]==0, "Baseline VAF"]=0.25
 combined_muts.loc[combined_muts["Progression VAF"]==0, "Progression VAF"]=0.25
 
 fig = plt.figure(figsize=(7, 5))
-outer_gs = gridspec.GridSpec(4, 4, height_ratios=[1, 1, 1, 0.2], width_ratios=[1, 1, 0.6, 1], hspace = 0.15, wspace = 0.1)
+outer_gs = gridspec.GridSpec(3.5, 4, height_ratios=[1, 1, 1, 0.2], width_ratios=[1, 1, 1, 1], hspace = 0.15, wspace = 0.05)
 
 all_genes=combined_muts["Gene"].unique()
 DTA_genes=['DNMT3A', 'TET2', 'ASXL1']
