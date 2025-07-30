@@ -68,11 +68,16 @@ def annotate_mutation_status_lu(mutations_df, PATH_sample_information, annotate_
     elif isinstance(annotate_gene, list):
         mutations_df = mutations_df[mutations_df["Gene"].isin(annotate_gene)].reset_index(drop=True)
     
+    if timepoint.lower()=="baseline":
+        timepoint=="Baseline"
+    elif timepoint.lower()=="firstprogression":
+        timepoint="FirstProgression"
+    
     mutations_df = mutations_df[["Patient_id", "Timepoint_t", "Sample_name_t", "Gene", "VAF_n", "Protein_annotation"]]
     mutations_df[annotate_what + " status"] = "Positive"
     mutations_df = mutations_df[["Patient_id", annotate_what + " status"]].drop_duplicates().reset_index(drop = True)
     all_pts = pd.read_csv(PATH_sample_information, sep="\t")
-    all_pts = all_pts[all_pts["Timepoint"] == timepoint.capitalize()].rename(columns = {"Timepoint": "Timepoint_t"})
+    all_pts = all_pts[all_pts["Timepoint"] == timepoint].rename(columns = {"Timepoint": "Timepoint_t"})
     mutations_df = all_pts[["Patient_id", "Timepoint_t"]].drop_duplicates().merge(mutations_df, how = "left")
     mutations_df[annotate_what + " status"] = mutations_df[annotate_what + " status"].fillna("Negative")
     mutations_df = mutations_df.drop_duplicates().reset_index(drop = True)[["Patient_id", "Timepoint_t", annotate_what+" status"]]
@@ -119,12 +124,12 @@ def calculate_OR_and_p(muts, gene, ntotal_pt_lu, n_total_pt_caba, apply_correcti
     
     # Calculate Odds Ratio and CI
     OR = (a / b) / (c / d)
-    se_log_or = math.sqrt(1 / a + 1 / b + 1 / c + 1 / d)
+    se_log_or = math.sqrt(1/a +1/b +1/c + 1/d)
     log_or = math.log(OR)
     z = 1.96  # for 95% CI
     ci_lower = math.exp(log_or - z * se_log_or)
     ci_upper = math.exp(log_or + z * se_log_or)
-    
+        
     return {
         "Label": label,
         "OR": OR,
@@ -133,6 +138,38 @@ def calculate_OR_and_p(muts, gene, ntotal_pt_lu, n_total_pt_caba, apply_correcti
         "CI_upper": ci_upper,
         "Correction applied": corrected
     }
+
+def plot_pie(df, gene, ax_pie, label_var_incr=False):
+    if gene is not None:
+        df = df[df["Gene"] == gene]
+    
+    df = binomial_test_vaf(df)
+    ax_pie.spines[["top", "right", "left", "bottom"]].set_visible(False)
+    
+    incr_muts = 0
+    decr_muts = 0
+    stable_muts = 0
+    
+    for _, row in df.iterrows():
+        base_vaf = row["Baseline VAF"]
+        prog_vaf = row["Progression VAF"]
+        if row["significant"]:
+            if prog_vaf > base_vaf:  # VAF increase
+                incr_muts += 1
+            else:
+                decr_muts += 1
+        else:
+            stable_muts += 1
+    
+    sizes = [incr_muts, decr_muts, stable_muts]
+    colors = ["orangered", "royalblue", "mediumseagreen"]
+    
+    # Set labels: Only label "VAF↑" for the first slice (incr_muts) if label_var_incr is True
+    labels = ["VAF↑" if label_var_incr else None, None, None]
+    
+    ax_pie.pie(sizes, labels=labels, autopct=None, startangle=140, colors=colors)
+    
+    return ax_pie  # Make sure to return the correct axis
 
 def plot_vaf_change(df, gene, ax, plot_delta=True, plot_days=True): 
     """
@@ -225,3 +262,7 @@ def compare_growth_rate_per_gene_BOX(df, ax, gene=None, protein_alt=None):
     ax.set_xlim([-1.2, 2.2])
     return(ax, nmuts)
 
+def round_sig(x, sig=2):
+    if x == 0:
+        return 0
+    return round(x, sig - int(np.floor(np.log10(abs(x)))) - 1)
