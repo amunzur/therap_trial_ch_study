@@ -88,10 +88,10 @@ def plot_ch_prevalence_by_arm(muts_df, path_sample_info, color_dict, ax, annotat
             p_value_rounded=round_sig(p_value, 3)
             
             ypos=97
-            if p_value>0.05:
-                ax.text(i, ypos, "ns", ha='center', va='bottom', color='black', fontsize=6)
-            else: 
-                ax.text(i, ypos, p_value_rounded, ha='center', va='bottom', color='black', fontsize=6)
+            # if p_value>0.05:
+            #     ax.text(i, ypos, "ns", ha='center', va='bottom', color='black', fontsize=6)
+            # else: 
+            ax.text(i, ypos, p_value_rounded, ha='center', va='bottom', color='black', fontsize=6)
     
     ax.set_xlim((-0.7, 2.5))
     ax.set_xticks([0, 1, 2])
@@ -157,8 +157,8 @@ def plot_genewise_ch_mutations_by_arm(muts_df, genes_list, path_sample_info, gen
             # For Fisher's exact test
             nmuts_raw = muts_subset_df.shape[0]
             npts = muts_subset_df["Patient_id"].unique().shape[0]
-            total_patients = ntotal_lu+ntotal_caba
-            contingency_table.append([npts, total_patients - npts])   
+            # total_patients = ntotal_lu+ntotal_caba
+            contingency_table.append([npts, division_factor_dict[arm] - npts])   
             
             # Determine nmuts for plotting
             if raw_counts:
