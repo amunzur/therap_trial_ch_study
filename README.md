@@ -1,4 +1,4 @@
-# therap_trial_ch_study
+# Clonal hematopoiesis in TheraP trial
 
 This repository contains python scripts used to generate the figures in our clonal hematopoiesis in TheraP trial study. 
 Link:
