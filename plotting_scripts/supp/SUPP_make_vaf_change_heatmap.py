@@ -165,10 +165,18 @@ comparison_df = insert_blank_after(comparison_df, 'ASXL1')
 percent_df = percent_df.iloc[::-1].reset_index(drop=True)
 comparison_df = comparison_df.iloc[::-1].reset_index(drop=True)
 
+# reorder cols
+percent_df=percent_df[['Gene group', 'LuPSMA_INCR', 'Cabazitaxel_INCR', 'Spacer', 'LuPSMA_STABLE', 'Cabazitaxel_STABLE', 'LuPSMA_DECR', 'Cabazitaxel_DECR']]
+percent_df.insert(6, 'Spacer2', np.nan)
+
 # Custom colormaps
-incr_cmap = LinearSegmentedColormap.from_list("incr_cmap", ["white", "orangered"])
-stable_cmap = LinearSegmentedColormap.from_list("stable_cmap", ["white", "mediumseagreen"])
-decr_cmap = LinearSegmentedColormap.from_list("decr_cmap", ["white", "royalblue"])
+# incr_cmap = LinearSegmentedColormap.from_list("incr_cmap", ["white", "orangered"])
+# stable_cmap = LinearSegmentedColormap.from_list("stable_cmap", ["white", "mediumseagreen"])
+# decr_cmap = LinearSegmentedColormap.from_list("decr_cmap", ["white", "royalblue"])
+
+incr_cmap = LinearSegmentedColormap.from_list("incr_cmap", ["white", "#D81B1B"])
+stable_cmap = LinearSegmentedColormap.from_list("stable_cmap", ["white", "#FFC107"])
+decr_cmap = LinearSegmentedColormap.from_list("decr_cmap", ["white", "#1E88E5"])
 
 col_cmaps = {
     'Cabazitaxel_INCR': incr_cmap,
@@ -180,9 +188,11 @@ col_cmaps = {
 }
 
 # Plot
-fig, ax = plt.subplots(figsize=(8, 5))
-col_widths = [1] * (len(percent_df.columns) - 1)
-col_widths[3]=0.2  # Make spacer column narrower
+fig, ax = plt.subplots(figsize=(7.5, 4.5))
+col_widths = [1] * len(percent_df.columns[1:])
+col_widths[2]=0.2  # Make spacer column narrower
+col_widths[5]=0.2  # Make spacer column narrower
+
 col_heights=[1] * (len(percent_df.index))
 col_heights[5]=col_heights[10]=0.2
 
@@ -208,7 +218,7 @@ for row_idx, row in enumerate(percent_df.itertuples(index=False)):
         ypos = y_positions[row_idx]
         ax.add_patch(plt.Rectangle((xpos, ypos), width, height, color=color))
         if annotation:
-            ax.text(xpos + width / 2, ypos + height / 2, annotation, ha='center', va='center', fontsize=9)
+            ax.text(xpos + width / 2, ypos + height / 2, annotation, ha='center', va='center', fontsize=8)
 
 # Formatting
 ax.set_xlim(0, x_positions[-1])
@@ -227,3 +237,4 @@ plt.tight_layout()
 
 ax.spines[["top", "right", "bottom", "left"]].set_visible(False)
 plt.savefig(f"{dir_figures}/SUPP_dta_ddr_vaf_change_heatmap.pdf")
+plt.savefig(f"{dir_figures}/SUPP_dta_ddr_vaf_change_heatmap.png")
