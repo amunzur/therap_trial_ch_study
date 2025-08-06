@@ -138,7 +138,8 @@ project_dir = os.environ.get("project_dir")
 baseline_ch_path=f"{project_dir}/CH_baseline.csv"
 path_sample_info = f"{project_dir}/resources/sample_info.tsv"
 progression_ch_path=f"{project_dir}/CH_progression.csv"
-path_cycles="/groups/wyattgrp/users/amunzur/lu_chip/resources/clinical_tables/TheraP supplementary tables - Treatment dates (22-Feb-2025).csv"
+path_cycles=f"{project_dir}/resources/TheraP supplementary tables - Treatment dates (22-Feb-2025).csv"
+dir_figures=f"{project_dir}/figures/main"
 
 sample_info = pd.read_csv(path_sample_info, sep= "\t")
 pts_with_progression_samples = sample_info[sample_info["Timepoint"] == "FirstProgression"][["Patient_id", "Arm"]].drop_duplicates()
@@ -174,43 +175,42 @@ ncycles_df['ncycles_bin_numeric'] = ncycles_df['cycle_bin'].cat.codes
 
 ####################################################
 # Model 3. This time correlating the number of cycles of treatment with change in max vaf from baseline to progression.
-# max_vaf_df_base=baseline_ch.groupby(["Patient_id", "Arm"])["VAF%"].max().reset_index().merge(pts_with_progression_samples, how="right").fillna(0.25).rename(columns={"VAF%": "Max VAF baseline"})
-# max_vaf_df_prog=progression_ch.groupby(["Patient_id", "Arm"])["VAF%"].max().reset_index().merge(pts_with_progression_samples, how="right").fillna(0.25).rename(columns={"VAF%": "Max VAF progression"})
+max_vaf_df_base=baseline_ch.groupby(["Patient_id", "Arm"])["VAF%"].max().reset_index().merge(pts_with_progression_samples, how="right").fillna(0.25).rename(columns={"VAF%": "Max VAF baseline"})
+max_vaf_df_prog=progression_ch.groupby(["Patient_id", "Arm"])["VAF%"].max().reset_index().merge(pts_with_progression_samples, how="right").fillna(0.25).rename(columns={"VAF%": "Max VAF progression"})
 
-# max_vaf_diff_df=max_vaf_df_base.merge(max_vaf_df_prog)
-# max_vaf_diff_df["vaf_diff"]=max_vaf_diff_df["Max VAF progression"]-max_vaf_diff_df["Max VAF baseline"]
-# max_vaf_diff_df=max_vaf_diff_df.merge(ncycles_df)
+max_vaf_diff_df=max_vaf_df_base.merge(max_vaf_df_prog)
+max_vaf_diff_df["vaf_diff"]=max_vaf_diff_df["Max VAF progression"]-max_vaf_diff_df["Max VAF baseline"]
+max_vaf_diff_df=max_vaf_diff_df.merge(ncycles_df)
 
-# max_vaf_diff_df_lu=max_vaf_diff_df[max_vaf_diff_df["Arm"]=="LuPSMA"]
-# max_vaf_diff_df_caba=max_vaf_diff_df[max_vaf_diff_df["Arm"]=="Cabazitaxel"]
+max_vaf_diff_df_lu=max_vaf_diff_df[max_vaf_diff_df["Arm"]=="LuPSMA"]
+max_vaf_diff_df_caba=max_vaf_diff_df[max_vaf_diff_df["Arm"]=="Cabazitaxel"]
 
-median_vaf_df_base=baseline_ch.groupby(["Patient_id", "Arm"])["VAF%"].median().reset_index().merge(pts_with_progression_samples, how="right").fillna(0.25).rename(columns={"VAF%": "Median VAF baseline"})
-median_vaf_df_prog=progression_ch.groupby(["Patient_id", "Arm"])["VAF%"].median().reset_index().merge(pts_with_progression_samples, how="right").fillna(0.25).rename(columns={"VAF%": "Median VAF progression"})
+# median_vaf_df_base=baseline_ch.groupby(["Patient_id", "Arm"])["VAF%"].median().reset_index().merge(pts_with_progression_samples, how="right").fillna(0.25).rename(columns={"VAF%": "Median VAF baseline"})
+# median_vaf_df_prog=progression_ch.groupby(["Patient_id", "Arm"])["VAF%"].median().reset_index().merge(pts_with_progression_samples, how="right").fillna(0.25).rename(columns={"VAF%": "Median VAF progression"})
 
-median_vaf_diff_df=median_vaf_df_base.merge(median_vaf_df_prog)
-median_vaf_diff_df["vaf_diff"]=median_vaf_diff_df["Median VAF progression"]-median_vaf_diff_df["Median VAF baseline"]
-median_vaf_diff_df=median_vaf_diff_df.merge(ncycles_df)
+# median_vaf_diff_df=median_vaf_df_base.merge(median_vaf_df_prog)
+# median_vaf_diff_df["vaf_diff"]=median_vaf_diff_df["Median VAF progression"]-median_vaf_diff_df["Median VAF baseline"]
+# median_vaf_diff_df=median_vaf_diff_df.merge(ncycles_df)
 
-median_vaf_diff_df_lu=median_vaf_diff_df[median_vaf_diff_df["Arm"]=="LuPSMA"]
-median_vaf_diff_df_caba=median_vaf_diff_df[median_vaf_diff_df["Arm"]=="Cabazitaxel"]
+# median_vaf_diff_df_lu=median_vaf_diff_df[median_vaf_diff_df["Arm"]=="LuPSMA"]
+# median_vaf_diff_df_caba=median_vaf_diff_df[median_vaf_diff_df["Arm"]=="Cabazitaxel"]
 
 # max_vaf_diff_df_lu_no_outlier=max_vaf_diff_df_lu[max_vaf_diff_df_lu["Cycle"]>1]
 
-# lu_normalglm_model_vaf=fit_normal_glm(max_vaf_diff_df_lu, "Cycle", "vaf_diff")
-# caba_normalglm_model_vaf=fit_normal_glm(max_vaf_diff_df_caba, "Cycle", "vaf_diff")
+lu_normalglm_model_vaf=fit_normal_glm(max_vaf_diff_df_lu, "Cycle", "vaf_diff")
+caba_normalglm_model_vaf=fit_normal_glm(max_vaf_diff_df_caba, "Cycle", "vaf_diff")
 
-lu_normalglm_model_vaf=fit_normal_glm(median_vaf_diff_df_lu, "Cycle", "vaf_diff")
-caba_normalglm_model_vaf=fit_normal_glm(median_vaf_diff_df_caba, "Cycle", "vaf_diff")
+# lu_normalglm_model_vaf=fit_normal_glm(median_vaf_diff_df_lu, "Cycle", "vaf_diff")
+# caba_normalglm_model_vaf=fit_normal_glm(median_vaf_diff_df_caba, "Cycle", "vaf_diff")
 
 # Plotting findings
 arm_color_dict={"LuPSMA": "#6f1fff", "Cabazitaxel": "#3e3939"}
 arm_color_dict_lighter={"LuPSMA": "#B38AFF", "Cabazitaxel": "#857A7A"}
 
-
-lu_normal_glm_path="/groups/wyattgrp/users/amunzur/lu_chip/results/figures/progression/lu_normal_glm_vaf_change_median_vaf.pdf"
+lu_normal_glm_path=f"{dir_figures}/lu_normal_glm_vaf_change.pdf"
 plot_glm_predictions(
     lu_normalglm_model_vaf, 
-    median_vaf_diff_df_lu, 
+    max_vaf_diff_df_lu, 
     x_col="Cycle", 
     y_col="vaf_diff", 
     y_label="ΔMax CH VAF%", 
@@ -220,10 +220,10 @@ plot_glm_predictions(
     fitted_glmcolor=arm_color_dict["LuPSMA"], 
     dotcolor=arm_color_dict_lighter["LuPSMA"])
 
-caba_normal_glm_path="/groups/wyattgrp/users/amunzur/lu_chip/results/figures/progression/caba_normal_glm_vaf_change_median_vaf.pdf"
+caba_normal_glm_path=f"{dir_figures}/caba_normal_glm_vaf_change.pdf"
 plot_glm_predictions(
     caba_normalglm_model_vaf, 
-    median_vaf_diff_df_caba, 
+    max_vaf_diff_df_caba, 
     x_col="Cycle", 
     y_col="vaf_diff", 
     y_label="ΔMax CH VAF%", 
@@ -232,8 +232,3 @@ plot_glm_predictions(
     formula_based=False,
     fitted_glmcolor=arm_color_dict["Cabazitaxel"], 
     dotcolor=arm_color_dict_lighter["Cabazitaxel"])
-
-
-
-
-
