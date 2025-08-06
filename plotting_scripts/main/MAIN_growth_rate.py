@@ -100,9 +100,17 @@ baseline_ch_subset=baseline_ch_subset[['Patient_id', 'Arm', 'Gene', 'VAF%','Base
 baseline_ch_subset.columns=['Patient_id', 'Arm', 'Gene', 'Baseline VAF', 'Baseline alt', 'Baseline depth', 'Progression VAF', 'Progression alt', 'Progression depth']
 
 progression_ch["Progression alt"]=progression_ch["Alt_forward"]+progression_ch["Alt_reverse"]
-progression_ch=progression_ch[progression_ch["Independently detected at baseline"]==False]
+# progression_ch=progression_ch[progression_ch["Independently detected at baseline"]==False]
 progression_ch=progression_ch[['Patient_id', 'Arm', 'Gene', 'VAF%', 'Progression alt', 'Depth', 'Baseline vaf%', 'Baseline alt count', 'Baseline depth']]
 progression_ch.columns=['Patient_id', 'Arm', 'Gene', 'Progression VAF', 'Progression alt', 'Progression depth', 'Baseline VAF', 'Baseline alt', 'Baseline depth']
+
+
+# df=progression_ch[progression_ch["Gene"]=="PPM1D"]
+df=progression_ch.copy()
+df["vaf diff"]=df["Progression VAF"]-df["Baseline VAF"]
+df=df[df["vaf diff"]>=10]
+df["Patient_id"].unique().shape
+
 
 ########################
 baseline_ch_subset["Timepoint"]="Baseline"
