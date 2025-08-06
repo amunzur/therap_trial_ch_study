@@ -43,13 +43,14 @@ clin_data=clin_data.rename(columns={"Patient": "Patient_id"})
 clin_data=clin_data[clin_data["Patient_id"].isin(study_cohort)]
 
 def return_iqr(values):
-    q75 = round(np.percentile(values, 75))
-    q25 = round(np.percentile(values, 25))
+    q75 = round(np.percentile(values, 75), 2)
+    q25 = round(np.percentile(values, 25), 2)
     iqr=f"{q25}-{q75}"
     return(iqr)
 
 # Store table rows
 table_rows = []
+n_total_dict={"LuPSMA": 96, "Cabazitaxel": 82}
 
 # Loop through arms
 for arm in ['LuPSMA', 'Cabazitaxel']:
@@ -58,7 +59,7 @@ for arm in ['LuPSMA', 'Cabazitaxel']:
     
     # Continuous variables
     for variable in ['Age', 'PSA', 'LDH', 'ALP', 'Haemoglobin', 'Neutrophil lymphocyte ratio']:
-        median = round(clin_df_arm[variable].median())
+        median = round(clin_df_arm[variable].median(), 2)
         iqr = return_iqr(clin_df_arm[variable].dropna())
         row = next((r for r in table_rows if r["Characteristic"] == variable), None)
         if row:
