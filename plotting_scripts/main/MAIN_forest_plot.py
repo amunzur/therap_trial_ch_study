@@ -25,6 +25,8 @@ mpl.rcParams['legend.labelspacing'] = '0.4'
 mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['axes.linewidth'] = 1
+mpl.rcParams['xtick.major.width'] = 1
+mpl.rcParams['ytick.major.width'] = 1
 mpl.rcParams['xtick.labelsize'] = 8
 mpl.rcParams['ytick.labelsize'] = 8
 mpl.rcParams['axes.labelsize'] = 8
@@ -78,17 +80,18 @@ y_tick_pos_list=[]
 y_tick_label_list=[]
 y_tick_label_color=[]
 
+pvals_dict={}
 for i in range(len(gene_dict["gene_group_name"])):
     gene_group_name = gene_dict["gene_group_name"][i]
     gene_group = gene_dict["gene_group"][i]
     min_y = gene_dict["min_y"][i]
     
     print(gene_group_name, gene_group, min_y)
-        
+    
     # STEP 1. PLOT THE FOREST
     for j, gene in enumerate(gene_group):
         ypos=j+min_y
-        gene_color = gene_color_dict.get(gene, "black")
+        # gene_color = gene_color_dict.get(gene, "black")
         gene_color="black"
                 
         if gene_group_name=="all genes":
@@ -109,6 +112,8 @@ for i in range(len(gene_dict["gene_group_name"])):
         ci_higher=or_dict["CI_upper"]
         pval=or_dict["p Fisher"]
         
+        pvals_dict[gene]=pval
+        
         if OR!=float("inf"):
             ax_forest.errorbar(OR, ypos, xerr=[[OR-ci_lower], [ci_higher-OR]], fmt='o', color=gene_color, capsize=3, label="OR with 95% CI", linewidth=0.5, ms=3, elinewidth=0.5)
             
@@ -121,6 +126,13 @@ for i in range(len(gene_dict["gene_group_name"])):
         
         else:
             ax_forest.text(2, ypos, "infinite", ha="left")
+
+# Printing corrected P values, noncorrected are annotated on plot
+pvals_dict["All genes"]=pvals_dict.pop(0)
+
+rejected, pvals_corrected, _, _ = multipletests(list(pvals_dict.values()), alpha=0.05, method='fdr_bh')
+corrected_pvals_dict = dict(zip(pvals_dict.keys(), pvals_corrected))
+
 
 ax_forest.axvline(1, color='gray', linestyle='--', label='Neutral (OR=1)', linewidth=0.5)
 ax_forest.set_ylim((-0.5, 9))
