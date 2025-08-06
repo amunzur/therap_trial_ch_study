@@ -32,9 +32,12 @@ mut_dict = {
 
 renaming_dict={
     "missense": 'Missense',
-    "stop_gain": 'Stop gain',
-    "frameshift": 'Frameshift InDel',
+    "stopgain": 'Stop gain',
+    "frameshift_deletion": 'Frameshift InDel',
+    "frameshift_insertion": "Frameshift InDel",
     "nonframeshift_deletion": 'Nonframeshift InDel',
+    "nonframeshift_insertion": 'Nonframeshift InDel',
+    "promoter": "Missense",
     "splicing": "Splicing"   
 }
 
@@ -52,23 +55,24 @@ exec(script_code)
 
 # LOAD DATASETS
 sample_info = pd.read_csv(path_sample_info, sep= "\t")
-baseline_ch_main = pd.read_csv(baseline_ch_path)
-df=baseline_ch_main[["Gene", "Effects"]]
+baseline_ch_main = pd.read_csv('https://docs.google.com/spreadsheets/d/1goOtwFlxgQDitW30VGVEz8hkT47OHqhDtjJJLpmb5I0/export?gid=0&format=csv')
+# baseline_ch_main = pd.read_csv(baseline_ch_path)
+df=baseline_ch_main[["Gene", "Effect"]]
 
 gene_order=baseline_ch["Gene"].value_counts().reset_index()["index"].reset_index()
 gene_order.columns=["xpos", "Gene"]
 
 df=df.value_counts().reset_index().merge(gene_order)
-df.columns=['Gene', 'Effects', 'n', 'xpos']
-df["Effects"]=df["Effects"].map(renaming_dict)
-df["color"]=df["Effects"].map(mut_dict)
+df.columns=['Gene', 'Effect', 'n', 'xpos']
+df["Effect"]=df["Effect"].map(renaming_dict)
+df["color"]=df["Effect"].map(mut_dict)
 
 fig, ax = plt.subplots(figsize=(4.5, 2.5))
 
 effect_order = ["Missense", "Splicing", "Stop gain", "Frameshift InDel", "Nonframeshift InDel"]
 for i, group in df.groupby("Gene"):
-    group["Effects"]=group["Effects"].astype(pd.CategoricalDtype(categories=effect_order, ordered=True))
-    group = group.sort_values("Effects")
+    group["Effect"]=group["Effect"].astype(pd.CategoricalDtype(categories=effect_order, ordered=True))
+    group = group.sort_values("Effect")
     bottom=0
     for _, row in group.iterrows():
         ax.bar(row["xpos"], row["n"], bottom=bottom, color=row["color"])
@@ -77,7 +81,7 @@ for i, group in df.groupby("Gene"):
 n_genes=df["Gene"].unique().shape[0]
 ax.spines[["top", "right"]].set_visible(False)
 ax.set_xticks(range(0, n_genes))
-ax.set_xticklabels(df["Gene"].unique(), rotation=90)
+ax.set_xticklabels(df["Gene"].unique(), rotation=90, fontsize=6)
 ax.set_xlim(-1, n_genes+1)
 ax.set_ylabel("Number of mutations")
 

@@ -50,7 +50,7 @@ def make_boxp_for_vaf(muts_df, lighter_color_dict, darker_color_dict, ax, genes_
                              whiskerprops=dict(color=darker_color_dict[arm]),
                              medianprops=dict(color=darker_color_dict[arm]),
                              flierprops=dict(marker='o', markersize=0, linestyle='none'))
-            
+        
         # Store raw p-value for later correction
         if all(len(vaf_data[arm]) > 0 for arm in ["LuPSMA", "Cabazitaxel"]):
             stat, p = mannwhitneyu(vaf_data["LuPSMA"], vaf_data["Cabazitaxel"], alternative='two-sided')
@@ -97,12 +97,13 @@ dir_figures=f"{project_dir}/figures/supp"
 path_utilities=f"{project_dir}/plotting_scripts/utilities.py"
 with open(path_utilities, 'r') as file:
     script_code = file.read()
+
 exec(script_code)
 
 arm_color_dict={"LuPSMA": "#6f1fff", "Cabazitaxel": "#3e3939"}
 
-baseline_ch = pd.read_csv(baseline_ch_path)
-baseline_ch=harmonize_vaf_columns(baseline_ch, timepoint="Baseline")
+baseline_ch = pd.read_csv(progression_ch_path)
+baseline_ch=harmonize_vaf_columns(baseline_ch, timepoint="FirstProgression")
 
 # PLOTTING
 # Baseline CH
@@ -113,5 +114,5 @@ ax=make_boxp_for_vaf(muts_df=baseline_ch, lighter_color_dict=arm_color_dict, dar
 
 ax.set_title("Baseline CH", loc='left', pad=10, x=0.0)
 fig.tight_layout()
-fig.savefig(f"{dir_figures}/SUPP_baseline_VAF_boxplot.png")
-fig.savefig(f"{dir_figures}/SUPP_baseline_VAF_boxplot.pdf", transparent=True)
+fig.savefig(f"{dir_figures}/test.png")
+fig.savefig(f"{dir_figures}/test.pdf", transparent=True)
